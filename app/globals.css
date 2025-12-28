@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+@layer base {
+  * {
+    @apply border-glass-border;
+  }
+  body {
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-glass-bg backdrop-blur-2xl border border-glass-border rounded-3xl shadow-2xl;
+  }
+  
+  .glass-input {
+    @apply bg-glass-bg backdrop-blur-xl border border-glass-border rounded-full 
+           focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
+           transition-all duration-200;
+  }
+  
+  .bubble-user {
+    @apply bg-gradient-to-br from-purple-600/30 to-blue-600/30 backdrop-blur-lg
+           border border-purple-500/30 rounded-3xl rounded-tr-md;
+  }
+  
+  .bubble-assistant {
+    @apply bg-glass-light backdrop-blur-lg border border-glass-border 
+           rounded-3xl rounded-tl-md;
+  }
+  
+  .btn-pill {
+    @apply px-6 py-2.5 rounded-full font-medium transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black
+           active:scale-95;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
