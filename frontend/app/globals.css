@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #f0f4ff;
+  --foreground: #1a1a2e;
 }
 
 @layer base {
@@ -18,28 +18,28 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-glass-bg backdrop-blur-2xl border border-glass-border rounded-3xl shadow-2xl;
+    @apply bg-white/40 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-xl;
   }
   
   .glass-input {
-    @apply bg-glass-bg backdrop-blur-xl border border-glass-border rounded-full 
-           focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50
+    @apply bg-white/50 backdrop-blur-xl border border-white/70 rounded-full 
+           focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50
            transition-all duration-200;
   }
   
   .bubble-user {
-    @apply bg-gradient-to-br from-purple-600/30 to-blue-600/30 backdrop-blur-lg
-           border border-purple-500/30 rounded-3xl rounded-tr-md;
+    @apply bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-lg
+           border border-blue-400/40 rounded-3xl rounded-tr-md;
   }
   
   .bubble-assistant {
-    @apply bg-glass-light backdrop-blur-lg border border-glass-border 
+    @apply bg-white/60 backdrop-blur-lg border border-white/80 
            rounded-3xl rounded-tl-md;
   }
   
   .btn-pill {
     @apply px-6 py-2.5 rounded-full font-medium transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
            active:scale-95;
   }
   
@@ -52,11 +52,11 @@
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(100, 100, 255, 0.2);
     border-radius: 3px;
   }
   
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(100, 100, 255, 0.3);
   }
 }

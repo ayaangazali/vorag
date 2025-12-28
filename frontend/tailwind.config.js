@@ -10,9 +10,9 @@ module.exports = {
     extend: {
       colors: {
         glass: {
-          border: 'rgba(255, 255, 255, 0.08)',
-          bg: 'rgba(255, 255, 255, 0.03)',
-          light: 'rgba(255, 255, 255, 0.08)',
+          border: 'rgba(255, 255, 255, 0.6)',
+          bg: 'rgba(255, 255, 255, 0.4)',
+          light: 'rgba(255, 255, 255, 0.6)',
         },
       },
       backdropBlur: {

@@ -47,8 +47,8 @@ export default function Composer({ value, onChange, onSend, disabled = false }: 
             placeholder="Type your message..."
             rows={1}
             disabled={disabled}
-            className="w-full px-6 py-4 glass-input resize-none text-sm text-gray-100 
-                       placeholder:text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-4 glass-input resize-none text-sm text-gray-800 
+                       placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ minHeight: '56px', maxHeight: '160px' }}
             aria-label="Message input"
           />
@@ -60,9 +60,9 @@ export default function Composer({ value, onChange, onSend, disabled = false }: 
           disabled={isDisabled}
           whileHover={!isDisabled ? { scale: 1.05 } : {}}
           whileTap={!isDisabled ? { scale: 0.95 } : {}}
-          className={`btn-pill bg-gradient-to-r from-purple-600 to-blue-600 text-white 
-                     focus:ring-purple-500 shadow-lg shrink-0
-                     ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:from-purple-500 hover:to-blue-500'}`}
+          className={`btn-pill bg-gradient-to-r from-blue-600 to-indigo-600 text-white 
+                     focus:ring-blue-500 shadow-lg shrink-0
+                     ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-500 hover:to-indigo-500'}`}
           aria-label="Send message"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,8 +75,8 @@ export default function Composer({ value, onChange, onSend, disabled = false }: 
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="btn-pill bg-glass-light border border-glass-border text-gray-400 
-                     hover:text-gray-300 hover:border-gray-600 focus:ring-gray-600 
+          className="btn-pill bg-white/60 border border-white/80 text-gray-600 
+                     hover:text-gray-700 hover:border-gray-300 focus:ring-gray-400 
                      shadow-lg shrink-0 relative group"
           aria-label="Voice input (coming soon)"
           title="Voice input coming soon"
@@ -88,7 +88,7 @@ export default function Composer({ value, onChange, onSend, disabled = false }: 
           
           {/* Tooltip */}
           <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-3 py-1 
-                         bg-gray-900 text-gray-300 text-xs rounded-lg opacity-0 
+                         bg-gray-800 text-white text-xs rounded-lg opacity-0 
                          group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             Coming soon
           </span>
@@ -96,9 +96,9 @@ export default function Composer({ value, onChange, onSend, disabled = false }: 
       </div>
       
       {/* Helper text */}
-      <p className="text-xs text-gray-600 pl-2">
-        Press <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">Enter</kbd> to send,{' '}
-        <kbd className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">Shift+Enter</kbd> for new line
+      <p className="text-xs text-gray-500 pl-2">
+        Press <kbd className="px-1.5 py-0.5 rounded bg-white/60 text-gray-600 font-mono border border-gray-300">Enter</kbd> to send,{' '}
+        <kbd className="px-1.5 py-0.5 rounded bg-white/60 text-gray-600 font-mono border border-gray-300">Shift+Enter</kbd> for new line
       </p>
     </div>
   )

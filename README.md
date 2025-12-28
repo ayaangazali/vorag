@@ -1,29 +1,64 @@
-# VoiceRAG - Voice-Powered RAG Assistant
+# VoRAG - Voice RAG Web Application
 
-A modern, glassmorphic chat interface for Voice RAG (Retrieval-Augmented Generation) built with Next.js, React, TypeScript, and Framer Motion.
+A full-stack Voice RAG (Retrieval-Augmented Generation) application with web scraping, vector storage, and AI-powered question answering.
 
-## ✨ Features
+## 🏗️ Project Structure
 
-- � **Modern Glassmorphism UI**: Translucent cards, blur effects, bubble aesthetics
-- � **Dynamic Chat Interface**: Auto-resizing bubble textarea, smooth animations
-- 🤖 **Mocked RAG System**: Simulated assistant responses with typing indicators
-- 📱 **Fully Responsive**: Adapts beautifully from mobile to desktop
-- ♿ **Accessible**: Keyboard navigation, focus states, ARIA labels
-- 🌊 **Animated Background**: Subtle gradient blobs that drift slowly
+```
+vorag/
+├── frontend/          # Next.js frontend application
+│   ├── app/          # Next.js app directory
+│   ├── components/   # React components
+│   ├── package.json  # Frontend dependencies
+│   └── COMPONENTS.md # Frontend documentation
+│
+├── backend/          # FastAPI backend application
+│   ├── app/         # Python application code
+│   ├── data/        # Vector store data (auto-generated)
+│   ├── requirements.txt
+│   └── README.md    # Backend API documentation
+│
+├── .venv/           # Python virtual environment (shared)
+└── README.md        # This file
+```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- **Node.js** 18+ (for frontend)
+- **Python** 3.11+ (for backend)
+- **API Keys**:
+  - Apify (for web scraping)
+  - Anthropic (for Claude LLM)
+  - Azure OpenAI (for embeddings)
 
-### Installation
+### 1. Setup Backend
 
 ```bash
-# Clone the repository
-git clone https://github.com/ayaangazali/vorag.git
-cd vorag
+# Navigate to backend
+cd backend
+
+# Install dependencies (uses .venv in root)
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your API keys
+
+# Start backend server
+uvicorn app.main:app --reload --port 8000
+```
+
+Backend will run at: **http://localhost:8000**
+- API Docs: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+### 2. Setup Frontend
+
+```bash
+# Navigate to frontend
+cd frontend
 
 # Install dependencies
 npm install
@@ -32,164 +67,102 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+Frontend will run at: **http://localhost:3000**
 
-## 🎯 Project Structure
+## 📚 Documentation
 
-```
-vorag/
-├── app/
-│   ├── layout.tsx       # Root layout with dark mode
-│   ├── page.tsx         # Main page with chat state management
-│   └── globals.css      # Global styles with glassmorphism utilities
-├── components/
-│   ├── BackgroundFX.tsx    # Animated gradient background blobs
-│   ├── GlassCard.tsx       # Reusable glass container component
-│   ├── TopBar.tsx          # App header with logo and status
-│   ├── StatusPill.tsx      # Status indicator pill component
-│   ├── ChatPanel.tsx       # Chat history with auto-scroll
-│   ├── MessageBubble.tsx   # Individual message bubble styles
-│   ├── Composer.tsx        # Dynamic textarea input with send button
-│   └── ContextPanel.tsx    # Retrieved context sidebar (mocked)
-└── public/                 # Static assets
-```
+- **Backend**: See [backend/README.md](backend/README.md) for API documentation
+- **Frontend**: See [frontend/COMPONENTS.md](frontend/COMPONENTS.md) for component documentation
 
-## 🎨 Design Language
+## 🔑 Environment Variables
 
-### Glassmorphism
-- Translucent backgrounds with backdrop blur
-- Soft borders with subtle glows
-- Rounded corners (2xl/3xl) for bubble aesthetic
-- Dark mode first design
-
-### Color Palette
-- Background: Deep black (#0a0a0a)
-- Glass borders: `rgba(255, 255, 255, 0.08)`
-- User bubbles: Purple-blue gradient
-- Assistant bubbles: Subtle glass effect
-- Accents: Purple & Blue gradients
-
-### Animations
-- **Background**: Slow-drifting gradient blobs (20-30s)
-- **Messages**: Fade and slide up on entry
-- **Typing**: Animated dots indicator
-- **Buttons**: Gentle scale on hover/press
-
-## 💬 Chat Features
-
-### Dynamic Bubble Textarea
-- Auto-resizes as you type (up to 160px)
-- Press **Enter** to send
-- Press **Shift+Enter** for new line
-- Fully rounded bubble shape with glass effect
-
-### Message Handling
-- User messages appear instantly
-- Assistant shows typing indicator (~600ms)
-- Auto-scrolls to latest message
-- Clean bubble layout with role-based styling
-
-### Keyboard Shortcuts
-- `Enter` - Send message
-- `Shift+Enter` - New line in message
-- Tab navigation throughout UI
-
-## 🔮 Backend Integration (Coming Soon)
-
-Currently uses mocked local state. To connect to a real backend:
-
-1. **Replace mock responses** in `app/page.tsx`:
-   ```typescript
-   // Replace MOCK_RESPONSES with API call
-   const response = await fetch('/api/chat', {
-     method: 'POST',
-     body: JSON.stringify({ message: userMessage })
-   })
-   ```
-
-2. **Add voice input**: Implement Web Speech API or Whisper integration
-
-3. **Connect RAG backend**: Wire up Apify scraper and vector database
-
-4. **Update ContextPanel**: Display real retrieved chunks from backend
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Animations**: Framer Motion
-- **UI Pattern**: Glassmorphism with bubble aesthetic
-
-## 📱 Responsive Design
-
-- **Mobile**: Single column, stacked layout
-- **Tablet**: Optimized spacing and sizing
-- **Desktop**: Two-column layout (chat + context sidebar)
-
-## ♿ Accessibility
-
-- Semantic HTML throughout
-- ARIA labels on interactive elements
-- Visible keyboard focus states
-- Screen reader friendly
-- High contrast text
-
-## 🎭 Mock Data
-
-The app currently uses mocked data for:
-- Assistant responses (4 predefined answers)
-- Retrieved context chunks (3 sample chunks)
-- Typing delay simulation (600ms)
-
-## 📝 Development
+### Backend (.env in backend/)
 
 ```bash
-# Run development server
+# Required
+APIFY_TOKEN=your_apify_token
+ANTHROPIC_API_KEY=your_anthropic_key
+AZURE_OPENAI_API_KEY=your_azure_key
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_EMBEDDING_DEPLOYMENT=text-embedding-ada-002
+
+# Optional (has defaults)
+EMBEDDING_PROVIDER=azure
+LLM_PROVIDER=anthropic
+```
+
+## 🛠️ Development Workflow
+
+### Running Both Services
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
+uvicorn app.main:app --reload --port 8000
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
 npm run dev
+```
 
+### Making Changes
+
+- **Frontend changes**: Hot reload is automatic
+- **Backend changes**: Uvicorn auto-reloads on file changes
+
+## 📖 Usage
+
+1. **Start both servers** (backend and frontend)
+2. **Open frontend** at http://localhost:3000
+3. **Ingest content**:
+   - Use the `/ingest` API endpoint to scrape a URL
+   - Backend will scrape, chunk, and index the content
+4. **Ask questions**:
+   - Type questions in the chat interface
+   - Get AI-powered answers from Claude with sources
+
+## 🎨 Features
+
+### Frontend
+- 🎨 **Glassmorphic UI**: Modern light mode with glass effects
+- 💬 **Chat Interface**: Dynamic bubble textarea with animations
+- ⚡ **Real-time**: Smooth animations and transitions
+- 📱 **Responsive**: Works on all devices
+
+### Backend
+- 🌐 **Web Scraping**: Apify integration for content extraction
+- 🔍 **Vector Search**: Chroma for semantic search
+- 🤖 **RAG Pipeline**: Claude + Azure OpenAI embeddings
+- 🚀 **FastAPI**: High-performance async API
+- 📊 **Job Tracking**: Background ingestion with status updates
+
+## 🏭 Production Deployment
+
+### Backend
+
+```bash
+# Use gunicorn with uvicorn workers
+cd backend
+gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+```
+
+### Frontend
+
+```bash
 # Build for production
+cd frontend
 npm run build
-
-# Start production server
 npm start
-
-# Lint code
-npm run lint
 ```
-
-## 🎨 Customization
-
-### Update Colors
-Edit `tailwind.config.js`:
-```javascript
-colors: {
-  glass: {
-    border: 'rgba(255, 255, 255, 0.08)',
-    bg: 'rgba(255, 255, 255, 0.03)',
-  },
-}
-```
-
-### Adjust Animations
-Modify durations in `components/BackgroundFX.tsx`:
-```typescript
-transition={{ duration: 20, repeat: Infinity }}
-```
-
-### Change Status
-Update `components/StatusPill.tsx` for dynamic status display
 
 ## 📄 License
 
 MIT
 
-## 🤝 Contributing
+## 🔗 Quick Links
 
-Contributions welcome! Please open an issue or submit a pull request.
-
-## 🙏 Acknowledgments
-
-- Built for voice-powered RAG applications
-- Designed with glassmorphism and modern UI principles
-- Optimized for production use with backend integration
+- **Apify Console**: https://console.apify.com
+- **Anthropic Console**: https://console.anthropic.com
+- **Azure Portal**: https://portal.azure.com

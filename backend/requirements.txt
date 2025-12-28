@@ -1,0 +1,39 @@
+# FastAPI# LangChain and RAG
+langchain==0.1.5
+langchain-community==0.0.16
+langchain-openai==0.0.5
+langchain-anthropic==0.1.1
+
+# Vector store
+chromadb==0.4.22
+
+# AI APIs
+openai==1.10.0  # For embeddings
+anthropic==0.18.0  # For Claude LLMr
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Apify scraping
+apify-client>=1.6.0
+
+# Simple scraping (no API key needed)
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+lxml>=5.0.0
+
+# LangChain and RAG
+langchain>=0.1.0
+langchain-community>=0.0.17
+langchain-openai>=0.0.5
+
+# Vector store
+chromadb>=0.4.22
+
+# OpenAI (for embeddings and LLM)
+openai>=1.10.0
+
+# Utilities
+python-dotenv>=1.0.0
+httpx>=0.26.0

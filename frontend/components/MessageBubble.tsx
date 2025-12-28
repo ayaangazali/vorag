@@ -31,18 +31,21 @@ export default function MessageBubble({ message, isTyping = false }: MessageBubb
         {isTyping ? (
           <div className="flex items-center gap-1">
             <motion.span
+              className="text-gray-700"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.4, repeat: Infinity, delay: 0 }}
             >
               •
             </motion.span>
             <motion.span
+              className="text-gray-700"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.4, repeat: Infinity, delay: 0.2 }}
             >
               •
             </motion.span>
             <motion.span
+              className="text-gray-700"
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.4, repeat: Infinity, delay: 0.4 }}
             >
@@ -50,7 +53,7 @@ export default function MessageBubble({ message, isTyping = false }: MessageBubb
             </motion.span>
           </div>
         ) : (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-100">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-800">
             {message.content}
           </p>
         )}
