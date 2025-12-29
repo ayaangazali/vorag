@@ -66,11 +66,11 @@ class Settings(BaseSettings):
     COLLECTION_NAME: str = "voicerag_docs"
     
     # Chunking Settings
-    CHUNK_SIZE: int = 1000
-    CHUNK_OVERLAP: int = 200
+    CHUNK_SIZE: int = 200  # Very small chunks for maximum precision
+    CHUNK_OVERLAP: int = 50  # Proportional overlap
     
     # RAG Settings
-    TOP_K: int = 5
+    TOP_K: int = 10  # Increased to get more context with very small chunks
     MAX_CONTEXT_LENGTH: int = 4000
     
     # Logging

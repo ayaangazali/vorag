@@ -238,9 +238,10 @@ AZURE_LLM_DEPLOYMENT=gpt-35-turbo
 
 ### Chunking Settings
 
-- `CHUNK_SIZE`: Text chunk size in characters (default: `1000`)
-- `CHUNK_OVERLAP`: Overlap between chunks (default: `200`)
+- `CHUNK_SIZE`: Text chunk size in characters (default: `200`) - very small chunks for maximum precision
+- `CHUNK_OVERLAP`: Overlap between chunks (default: `50`)
 - `MAX_CONTEXT_LENGTH`: Max context length for LLM (default: `8000`)
+- `TOP_K`: Number of chunks to retrieve (default: `10`) - increased to compensate for very small chunks
 
 ## Project Structure
 

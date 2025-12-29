@@ -40,15 +40,20 @@ class ApifyScraper:
         logger.info(f"Starting Apify scrape for: {url}")
         
         try:
-            # Configure the website content crawler
+            # Configure the website content crawler - AGGRESSIVE MODE
             run_input = {
                 "startUrls": [{"url": url}],
-                "maxCrawlPages": max_pages,
-                "crawlerType": "playwright:firefox",
+                "maxCrawlPages": 50,  # Increased from 10
+                "crawlerType": "playwright:chromium",  # Chrome is better for modern sites
                 "includeUrlGlobs": [],
                 "excludeUrlGlobs": [],
-                "removeElementsCssSelector": "nav, header, footer, .sidebar, .menu, .advertisement",
-                "renderingTypeDetectionPercentage": 10,
+                "removeElementsCssSelector": "",  # DON'T remove anything - get ALL content
+                "renderingTypeDetectionPercentage": 100,  # Always wait for JS rendering
+                "waitForSelector": "body",  # Wait for body to load
+                "maxScrollHeightPixels": 10000,  # Scroll to load lazy content
+                "dynamicContentWaitSecs": 5,  # Wait 5 seconds for dynamic content
+                "htmlTransformer": "readableText",  # Extract readable text
+                "readableTextCharThreshold": 100,  # Minimum text length
             }
             
             logger.info(f"Starting actor run: {self.actor_name}")
