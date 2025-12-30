@@ -40,20 +40,58 @@ class ApifyScraper:
         logger.info(f"Starting Apify scrape for: {url}")
         
         try:
-            # Configure the website content crawler - AGGRESSIVE MODE
+            # Configure the website content crawler with optimized settings from Apify
             run_input = {
                 "startUrls": [{"url": url}],
-                "maxCrawlPages": 50,  # Increased from 10
-                "crawlerType": "playwright:chromium",  # Chrome is better for modern sites
-                "includeUrlGlobs": [],
-                "excludeUrlGlobs": [],
-                "removeElementsCssSelector": "",  # DON'T remove anything - get ALL content
-                "renderingTypeDetectionPercentage": 100,  # Always wait for JS rendering
-                "waitForSelector": "body",  # Wait for body to load
-                "maxScrollHeightPixels": 10000,  # Scroll to load lazy content
-                "dynamicContentWaitSecs": 5,  # Wait 5 seconds for dynamic content
-                "htmlTransformer": "readableText",  # Extract readable text
-                "readableTextCharThreshold": 100,  # Minimum text length
+                "maxCrawlPages": max_pages,
+                
+                # Core crawler settings - using Firefox for better compatibility
+                "crawlerType": "playwright:firefox",
+                "renderingTypeDetectionPercentage": 10,
+                
+                # Content extraction - save as markdown
+                "saveMarkdown": True,
+                "saveHtml": False,
+                "saveHtmlAsFile": False,
+                "saveFiles": False,
+                "saveScreenshots": False,
+                
+                # Text quality settings
+                "readableTextCharThreshold": 100,
+                "clientSideMinChangePercentage": 15,
+                
+                # Cookie and popup handling
+                "removeCookieWarnings": True,
+                "clickElementsCssSelector": "[aria-expanded=\"false\"]",
+                
+                # Expand iframes to get embedded content
+                "expandIframes": True,
+                
+                # Remove common navigation/UI elements but keep content
+                "removeElementsCssSelector": "nav, footer, script, style, noscript, svg, img[src^='data:'],\n[role=\"alert\"],\n[role=\"banner\"],\n[role=\"dialog\"],\n[role=\"alertdialog\"],\n[role=\"region\"][aria-label*=\"skip\" i],\n[aria-modal=\"true\"]",
+                
+                # Content extraction settings
+                "aggressivePrune": False,
+                "blockMedia": True,
+                "keepUrlFragments": False,
+                "ignoreCanonicalUrl": False,
+                "ignoreHttpsErrors": False,
+                
+                # Proxy configuration for better access
+                "proxyConfiguration": {
+                    "useApifyProxy": True
+                },
+                
+                # Robots.txt and sitemap settings
+                "respectRobotsTxtFile": True,
+                "useSitemaps": False,
+                "useLlmsTxt": False,
+                
+                # Debug and storage
+                "debugLog": False,
+                "debugMode": False,
+                "storeSkippedUrls": False,
+                "signHttpRequests": False,
             }
             
             logger.info(f"Starting actor run: {self.actor_name}")

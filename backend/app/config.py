@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     APIFY_TOKEN: Optional[str] = None
     APIFY_ACTOR_NAME: str = "apify/website-content-crawler"
     
+    # Bright Data Settings (alternative to Apify)
+    BRIGHTDATA_API_TOKEN: Optional[str] = None
+    BRIGHTDATA_COLLECTOR_ID: str = "c_mjsgl9011x823pu93h"
+    
+    # Scraper Selection
+    SCRAPER_PROVIDER: str = "brightdata"  # apify or brightdata
+    
     # Target URL
     TARGET_URL: str = "https://www.kamcoinvest.com/fund/kamco-investment-fund"
     

@@ -10,6 +10,7 @@ from langchain_core.documents import Document
 
 from app.config import settings
 from app.apify_client import ApifyScraper
+from app.brightdata_client import BrightDataScraper
 from app.storage import get_vector_store
 
 logger = logging.getLogger(__name__)
@@ -20,14 +21,21 @@ class IngestionPipeline:
     
     def __init__(self):
         """Initialize ingestion components."""
-        self.scraper = ApifyScraper()
+        # Select scraper based on configuration
+        if settings.SCRAPER_PROVIDER == "brightdata":
+            logger.info("Using Bright Data scraper")
+            self.scraper = BrightDataScraper()
+        else:
+            logger.info("Using Apify scraper")
+            self.scraper = ApifyScraper()
+            
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
             length_function=len,
             separators=["\n\n", "\n", ". ", " ", ""],
         )
-        logger.info(f"Ingestion pipeline initialized (chunk_size={settings.CHUNK_SIZE}, overlap={settings.CHUNK_OVERLAP})")
+        logger.info(f"Ingestion pipeline initialized (scraper={settings.SCRAPER_PROVIDER}, chunk_size={settings.CHUNK_SIZE}, overlap={settings.CHUNK_OVERLAP})")
     
     def run(self, url: str, progress_callback: Optional[Callable] = None) -> Dict[str, Any]:
         """
@@ -44,11 +52,11 @@ class IngestionPipeline:
         logger.info(f"🚀 Starting ingestion pipeline for: {url}")
         
         try:
-            # Step 1: Scrape with Apify
+            # Step 1: Scrape with configured scraper
             if progress_callback:
-                progress_callback("Starting Apify scrape...")
+                progress_callback(f"Starting {settings.SCRAPER_PROVIDER} scrape...")
             
-            logger.info("📥 Step 1/4: Scraping website with Apify...")
+            logger.info(f"📥 Step 1/4: Scraping website with {settings.SCRAPER_PROVIDER}...")
             scraped_docs = self.scraper.scrape_url(url, max_pages=10)
             
             if not scraped_docs:
