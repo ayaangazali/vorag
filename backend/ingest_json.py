@@ -11,13 +11,13 @@ from app.config import settings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 def ingest_json_file(json_path: str):
-    """Ingest a JSON file into the vector store."""
+ 
     
     print(f"📖 Reading JSON from: {json_path}")
     with open(json_path, 'r') as f:
         data = json.load(f)
     
-    # Convert JSON to text documents
+   
     documents = []
     
     if isinstance(data, list):

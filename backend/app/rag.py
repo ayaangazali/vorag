@@ -66,13 +66,13 @@ class RAGSystem:
         else:
             raise ValueError(f"Unsupported LLM provider: {settings.LLM_PROVIDER}")
     
-    def query(self, question: str, top_k: int = 5) -> Dict[str, Any]:
+    def query(self, question: str, top_k: int = 15) -> Dict[str, Any]:
         """
         Query the RAG system with a question.
         
         Args:
             question: User question
-            top_k: Number of context chunks to retrieve
+            top_k: Number of context chunks to retrieve (default: 15 for better comparisons)
             
         Returns:
             Dict with answer and sources
@@ -123,6 +123,7 @@ class RAGSystem:
     def _prepare_context(self, documents: List[Document]) -> str:
         """
         Prepare context string from retrieved documents.
+        Groups data by fund for better comparison.
         
         Args:
             documents: Retrieved documents
@@ -130,26 +131,47 @@ class RAGSystem:
         Returns:
             Formatted context string
         """
+        # Group documents by fund name for better organization
+        fund_groups = {}
+        other_docs = []
+        
+        for doc in documents:
+            fund_name = doc.metadata.get("fund_name", "")
+            if fund_name and fund_name != "Unknown":
+                if fund_name not in fund_groups:
+                    fund_groups[fund_name] = []
+                fund_groups[fund_name].append(doc)
+            else:
+                other_docs.append(doc)
+        
         context_parts = []
         
-        for idx, doc in enumerate(documents, 1):
-            title = doc.metadata.get("title", "Unknown")
-            url = doc.metadata.get("source_url", "")
-            content = doc.page_content
-            
-            context_parts.append(
-                f"[Source {idx}: {title}]\n"
-                f"URL: {url}\n"
-                f"Content: {content}\n"
-            )
+        # Add grouped fund data
+        for fund_name, fund_docs in fund_groups.items():
+            context_parts.append(f"=== {fund_name} ===")
+            for idx, doc in enumerate(fund_docs, 1):
+                context_parts.append(f"{doc.page_content}")
+            context_parts.append("")  # Empty line between funds
         
-        full_context = "\n---\n".join(context_parts)
+        # Add other documents
+        if other_docs:
+            context_parts.append("=== Additional Information ===")
+            for doc in other_docs:
+                title = doc.metadata.get("title", "Unknown")
+                url = doc.metadata.get("source_url", "")
+                context_parts.append(f"Source: {title}")
+                if url:
+                    context_parts.append(f"URL: {url}")
+                context_parts.append(f"{doc.page_content}\n")
+        
+        full_context = "\n".join(context_parts)
         
         # Truncate if too long
         if len(full_context) > settings.MAX_CONTEXT_LENGTH:
             logger.warning(f"Context too long ({len(full_context)} chars), truncating...")
             full_context = full_context[:settings.MAX_CONTEXT_LENGTH] + "..."
         
+        logger.info(f"Prepared context with {len(fund_groups)} funds and {len(other_docs)} other docs")
         return full_context
     
     def _generate_answer(self, question: str, context: str) -> str:
@@ -163,8 +185,8 @@ class RAGSystem:
         Returns:
             Generated answer
         """
-        # Create prompt
-        prompt_template = """You are a helpful AI assistant. Answer the user's question based ONLY on the provided context.
+        # Create prompt with enhanced comparison capabilities
+        prompt_template = """You are a helpful AI assistant specializing in financial fund analysis. Answer the user's question based ONLY on the provided context.
 
 Context:
 {context}
@@ -173,10 +195,16 @@ Question: {question}
 
 Instructions:
 - Answer the question using only information from the context above
+- If the question asks to compare multiple funds, analyze ALL relevant funds found in the context
+- When comparing, create clear comparisons using tables, bullet points, or structured formats
+- For comparisons, highlight key differences and similarities (e.g., performance, NAV, fees, risk levels, geographic focus)
+- If comparing performance, include specific numbers and percentages
+- If the context contains data from multiple funds, consider them all when answering
 - If the context doesn't contain enough information to answer fully, say "I don't have enough information to answer that completely"
 - Be concise but thorough
 - Cite which sources you used by mentioning [Source X]
 - Do not make up information not present in the context
+- For numerical comparisons, be precise and include units (%, KWD, etc.)
 
 Answer:"""
         

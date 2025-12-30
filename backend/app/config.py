@@ -77,8 +77,8 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 50  # Proportional overlap
     
     # RAG Settings
-    TOP_K: int = 10  # Increased to get more context with very small chunks
-    MAX_CONTEXT_LENGTH: int = 4000
+    TOP_K: int = 15  # Increased for better fund comparisons
+    MAX_CONTEXT_LENGTH: int = 8000  # Increased to hold more fund data for comparisons
     
     # Logging
     LOG_LEVEL: str = "INFO"
