@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.config import settings
 from app.models import (
@@ -513,7 +513,7 @@ async def voice_query(audio: UploadFile = File(...)):
         
         # Step 1.5: Use Claude to clean up grammar and fix transcription errors
         from anthropic import Anthropic
-        anthropic_client = Anthropic(api_key=settings.anthropic_api_key)
+        anthropic_client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         
         correction_prompt = f"""Fix any grammar mistakes and correct common transcription errors in this voice query. 
 Common errors: "camp co" should be "Kamco", "camco" should be "Kamco", "camp go" should be "Kamco", "camcuin" should be "Kamco".
@@ -537,14 +537,41 @@ Original: {question}"""
         
         logger.info(f"🤖 Generated answer: '{answer[:100]}...'")
         
-        # Step 3: Return text response (voice disabled for now)
-        return {
-            "question": question_cleaned,
-            "original_transcription": question,
-            "answer": answer,
-            "sources": rag_result.get("sources", []),
-            "mode": "text"
-        }
+        # Step 3: Text-to-Speech (Edge TTS)
+        tts = get_tts()
+        
+        # Create temp file for audio output
+        with safe_temp_file(suffix=".mp3") as output_path:
+            audio_path = await tts.synthesize(answer, output_path=output_path)
+            
+            logger.info(f"🔊 Synthesized audio with Edge TTS")
+            
+            # Read audio file to memory so we can delete temp file
+            with open(audio_path, 'rb') as f:
+                audio_data = f.read()
+            
+            # Sanitize headers to prevent HTTP errors (remove newlines, special chars)
+            def sanitize_header(text: str) -> str:
+                """Remove problematic characters from HTTP headers."""
+                import re
+                # Remove newlines, carriage returns, and non-ASCII
+                text = text.replace('\n', ' ').replace('\r', ' ')
+                # Remove control characters
+                text = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', text)
+                return text.strip()
+            
+            # Return audio response with the Claude-corrected question
+            return Response(
+                content=audio_data,
+                media_type="audio/mpeg",
+                headers={
+                    "X-Transcribed-Question": sanitize_header(question_cleaned[:1000]),  # Claude corrected version
+                    "X-Raw-Transcription": sanitize_header(question[:1000]),  # Original for debugging
+                    "X-Answer-Text": sanitize_header(answer[:2000]),  # Show more of the answer
+                    "X-Source-Count": str(len(rag_result.get("sources", []))),
+                    "X-Voice": "en-US-AriaNeural"
+                }
+            )
         
     except DependencyMissingError as e:
         logger.warning(f"Speech deps missing: {str(e)}")

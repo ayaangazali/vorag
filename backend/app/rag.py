@@ -196,14 +196,13 @@ Question: {question}
 Instructions:
 - Answer the question using only information from the context above
 - Be LENIENT with name variations (e.g., "Camp Co" means "Kamco", "camp co-invest" means "Kamco Co-Invest")
+- Keep your answer CONCISE and to-the-point (2-3 sentences max for simple questions)
+- For voice responses, be brief and conversational
 - If the question asks to compare multiple funds, analyze ALL relevant funds found in the context
-- When comparing, create clear comparisons using tables, bullet points, or structured formats
-- For comparisons, highlight key differences and similarities (e.g., performance, NAV, fees, risk levels, geographic focus)
-- If comparing performance, include specific numbers and percentages
-- If the context contains data from multiple funds, consider them all when answering
+- When comparing, create clear comparisons using bullet points (not long tables)
+- For comparisons, highlight ONLY the most important differences (e.g., top performance numbers)
+- If comparing performance, include specific numbers but keep it brief
 - If the context doesn't contain enough information to answer fully, say "I don't have enough information to answer that completely"
-- Be concise but thorough
-- Cite which sources you used by mentioning [Source X]
 - Do not make up information not present in the context
 - For numerical comparisons, be precise and include units (%, KWD, etc.)
 

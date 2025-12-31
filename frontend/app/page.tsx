@@ -146,6 +146,10 @@ export default function Home() {
         const answerText = response.headers.get('X-Answer-Text') || ''
         const voiceUsed = response.headers.get('X-Voice') || 'Edge TTS'
         
+        console.log('📝 Transcribed:', transcribedQuestion)
+        console.log('💬 Answer text:', answerText)
+        console.log('🎤 Voice:', voiceUsed)
+        
         // Update user message with transcribed question (show what you said)
         if (transcribedQuestion) {
           setMessages((prev) =>
@@ -167,14 +171,16 @@ export default function Home() {
         // Store audio element for cleanup
         setAudioElement(audio)
         
-        // Update assistant message to show we're playing audio
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === typingId
-              ? { ...msg, content: answerText || '🔊 Playing voice response...' }
-              : msg
+        // Update assistant message to show answer text BEFORE playing audio
+        if (answerText) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === typingId
+                ? { ...msg, content: answerText }  // Show the actual answer
+                : msg
+            )
           )
-        )
+        }
         
         // Play the audio
         await audio.play()
