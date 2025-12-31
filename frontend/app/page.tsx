@@ -19,6 +19,7 @@ export default function Home() {
   const [inputValue, setInputValue] = useState('')
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
 
   const handleSend = async () => {
     if (!inputValue.trim() || isProcessing) return
@@ -95,6 +96,127 @@ export default function Home() {
     }
   }
 
+  const handleVoiceQuery = async (audioBlob: Blob) => {
+    if (isProcessing) return
+
+    setIsProcessing(true)
+
+    try {
+      // Create FormData with the audio file
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+
+      // Add user message with placeholder
+      const userMessageId = `user-${Date.now()}`
+      const userMessage: Message = {
+        id: userMessageId,
+        role: 'user',
+        content: '🎙️ Voice message...',
+        createdAt: new Date(),
+      }
+      setMessages((prev) => [...prev, userMessage])
+
+      // Add typing indicator
+      const typingId = `assistant-${Date.now()}`
+      const typingMessage: Message = {
+        id: typingId,
+        role: 'assistant',
+        content: '',
+        createdAt: new Date(),
+      }
+      setMessages((prev) => [...prev, typingMessage])
+      setTypingMessageId(typingId)
+
+      // Call voice-query endpoint
+      const response = await fetch('http://localhost:8000/voice-query', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error(`Voice API error: ${response.status}`)
+      }
+
+      // Check if response is audio or JSON
+      const contentType = response.headers.get('content-type')
+      
+      if (contentType?.includes('audio')) {
+        // Get audio blob
+        const audioBlob = await response.blob()
+        
+        // Create audio URL and play it
+        const audioUrl = URL.createObjectURL(audioBlob)
+        const audio = new Audio(audioUrl)
+        
+        // Store audio element for cleanup
+        setAudioElement(audio)
+        
+        // Play the audio
+        await audio.play()
+        
+        // Update message to show audio was played
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === typingId
+              ? { ...msg, content: '🔊 Playing voice response...' }
+              : msg
+          )
+        )
+
+        // When audio finishes, try to get the transcription
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl)
+        }
+        
+      } else {
+        // JSON response (text mode)
+        const data = await response.json()
+        
+        // Update user message with transcription
+        if (data.question) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === userMessageId
+                ? { ...msg, content: `🎤 "${data.question}"` }
+                : msg
+            )
+          )
+        }
+        
+        // Show the answer as text
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === typingId
+              ? { ...msg, content: data.answer || data.detail || 'Voice response received' }
+              : msg
+          )
+        )
+        
+        // Log if transcription was corrected
+        if (data.original_transcription !== data.question) {
+          console.log('🔧 Corrected:', data.original_transcription, '→', data.question)
+        }
+      }
+
+      // Update user message with transcription if available
+      // (for now just keep the voice icon)
+      
+    } catch (error) {
+      console.error('Voice query failed:', error)
+      
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === typingMessageId
+            ? { ...msg, content: `Sorry, voice processing failed: ${error instanceof Error ? error.message : 'Unknown error'}. Make sure the backend is running.` }
+            : msg
+        )
+      )
+    } finally {
+      setTypingMessageId(null)
+      setIsProcessing(false)
+    }
+  }
+
   return (
     <main className="min-h-screen relative">
       <BackgroundFX />
@@ -111,6 +233,7 @@ export default function Home() {
               value={inputValue}
               onChange={setInputValue}
               onSend={handleSend}
+              onVoiceQuery={handleVoiceQuery}
               disabled={isProcessing}
             />
           </div>

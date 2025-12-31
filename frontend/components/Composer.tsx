@@ -2,16 +2,19 @@
 
 import React, { useRef, useEffect, KeyboardEvent } from 'react'
 import { motion } from 'framer-motion'
+import { useVoiceRecording } from '@/hooks/useVoiceRecording'
 
 interface ComposerProps {
   value: string
   onChange: (value: string) => void
   onSend: () => void
+  onVoiceQuery?: (audioBlob: Blob) => Promise<void>
   disabled?: boolean
 }
 
-export default function Composer({ value, onChange, onSend, disabled = false }: ComposerProps) {
+export default function Composer({ value, onChange, onSend, onVoiceQuery, disabled = false }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { isRecording, startRecording, stopRecording, error: recordingError } = useVoiceRecording()
   
   // Auto-resize textarea
   useEffect(() => {
@@ -22,6 +25,21 @@ export default function Composer({ value, onChange, onSend, disabled = false }: 
       textarea.style.height = `${newHeight}px`
     }
   }, [value])
+
+  const handleVoiceClick = async () => {
+    if (disabled) return
+
+    if (isRecording) {
+      // Stop recording and send audio
+      const audioBlob = await stopRecording()
+      if (audioBlob && onVoiceQuery) {
+        await onVoiceQuery(audioBlob)
+      }
+    } else {
+      // Start recording
+      await startRecording()
+    }
+  }
   
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -71,34 +89,68 @@ export default function Composer({ value, onChange, onSend, disabled = false }: 
           </svg>
         </motion.button>
         
-        {/* Mic button (placeholder) */}
+        {/* Mic button - Voice Recording */}
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="btn-pill bg-white/60 border border-white/80 text-gray-600 
-                     hover:text-gray-700 hover:border-gray-300 focus:ring-gray-400 
-                     shadow-lg shrink-0 relative group"
-          aria-label="Voice input (coming soon)"
-          title="Voice input coming soon"
+          onClick={handleVoiceClick}
+          disabled={disabled}
+          whileHover={{ scale: disabled ? 1 : 1.05 }}
+          whileTap={{ scale: disabled ? 1 : 0.95 }}
+          className={`btn-pill relative shrink-0 shadow-lg transition-all duration-300
+                     ${isRecording 
+                       ? 'bg-red-500 text-white animate-pulse' 
+                       : 'bg-white/60 border border-white/80 text-gray-600 hover:text-gray-700 hover:border-gray-300'
+                     }
+                     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                     focus:ring-blue-400`}
+          aria-label={isRecording ? 'Stop recording' : 'Start voice recording'}
+          title={isRecording ? 'Click to stop and send' : 'Click to start voice recording'}
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-          </svg>
-          
-          {/* Tooltip */}
-          <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-3 py-1 
-                         bg-gray-800 text-white text-xs rounded-lg opacity-0 
-                         group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Coming soon
-          </span>
+          {isRecording ? (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          )}
+
+          {/* Recording pulse indicator */}
+          {isRecording && (
+            <motion.div
+              className="absolute inset-0 rounded-full border-2 border-red-400"
+              animate={{
+                scale: [1, 1.3],
+                opacity: [0.8, 0],
+              }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeOut"
+              }}
+            />
+          )}
         </motion.button>
       </div>
+
+      {/* Error message for recording */}
+      {recordingError && (
+        <p className="text-xs text-red-500 pl-2">
+          ⚠️ {recordingError}
+        </p>
+      )}
       
       {/* Helper text */}
       <p className="text-xs text-gray-500 pl-2">
-        Press <kbd className="px-1.5 py-0.5 rounded bg-white/60 text-gray-600 font-mono border border-gray-300">Enter</kbd> to send,{' '}
-        <kbd className="px-1.5 py-0.5 rounded bg-white/60 text-gray-600 font-mono border border-gray-300">Shift+Enter</kbd> for new line
+        {isRecording ? (
+          <span className="text-red-500 font-medium animate-pulse">🎙️ Recording... Click the mic to stop and send</span>
+        ) : (
+          <>
+            Press <kbd className="px-1.5 py-0.5 rounded bg-white/60 text-gray-600 font-mono border border-gray-300">Enter</kbd> to send,{' '}
+            <kbd className="px-1.5 py-0.5 rounded bg-white/60 text-gray-600 font-mono border border-gray-300">Shift+Enter</kbd> for new line
+          </>
+        )}
       </p>
     </div>
   )

@@ -5,12 +5,15 @@ Provides endpoints for ingestion, querying, and health checks.
 
 import logging
 import uuid
+import os
+import tempfile
 from typing import Dict
 from datetime import datetime
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.models import (
@@ -246,6 +249,327 @@ async def query_rag(request: QueryRequest):
     except Exception as e:
         logger.error(f"Query failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Query failed: {str(e)}")
+
+
+@app.post("/speech-to-text")
+async def speech_to_text(audio: UploadFile = File(...)):
+    """
+    Convert speech audio to text using Whisper.
+    
+    **Requires optional dependencies:** `pip install faster-whisper soundfile`
+    
+    Args:
+        audio: Audio file (WAV, MP3, M4A, OGG, FLAC, etc.)
+               Max size: 25MB, Max duration: 5 minutes
+        
+    Returns:
+        {
+            "text": "transcribed text",
+            "filename": "original_filename.wav",
+            "duration": 12.5,
+            "language": "en"
+        }
+        
+    Raises:
+        503: Speech dependencies not installed
+        400: Invalid audio file
+        500: Transcription error
+    """
+    try:
+        from app.speech import get_stt, DependencyMissingError, AudioValidationError, safe_temp_file
+        
+        logger.info(f"📥 STT request: {audio.filename}")
+        
+        # Save uploaded file to temp location
+        with safe_temp_file(suffix=os.path.splitext(audio.filename or ".wav")[1]) as temp_path:
+            # Write uploaded content
+            content = await audio.read()
+            with open(temp_path, "wb") as f:
+                f.write(content)
+            
+            # Get STT service (lazy-loaded)
+            stt = get_stt()
+            
+            # Transcribe (includes validation)
+            result = stt.transcribe(temp_path)
+        
+        logger.info(f"✅ STT success: '{result['text'][:100]}...'")
+        
+        return {
+            "text": result["text"],
+            "filename": audio.filename,
+            "duration": result.get("duration"),
+            "language": result.get("language", "unknown")
+        }
+        
+    except DependencyMissingError as e:
+        logger.warning(f"Speech deps missing: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "speech_dependencies_missing",
+                "message": str(e),
+                "install_command": "pip install faster-whisper soundfile pydub",
+                "docs": "See VOICE_FEATURES.md for full setup instructions"
+            }
+        )
+    except AudioValidationError as e:
+        logger.warning(f"Audio validation failed: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "invalid_audio",
+                "message": str(e)
+            }
+        )
+    except Exception as e:
+        logger.error(f"STT failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Speech-to-text failed: {str(e)}"
+        )
+
+
+@app.post("/text-to-speech")
+async def text_to_speech(request: Dict[str, str]):
+    """
+    Convert text to speech audio.
+    
+    **Requires optional dependencies:** `pip install TTS soundfile`
+    
+    Args:
+        request: {"text": "text to synthesize"}
+                 Max length: 5000 characters
+        
+    Returns:
+        WAV audio file
+        
+    Raises:
+        503: Speech dependencies not installed
+        400: Text validation failed
+        500: Synthesis error
+    """
+    try:
+        from app.speech import get_tts, DependencyMissingError, SpeechServiceError, safe_temp_file
+        
+        text = request.get("text", "")
+        if not text or not text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Text field is required and cannot be empty"
+            )
+        
+        if len(text) > 5000:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Text too long ({len(text)} chars). Maximum is 5000 characters."
+            )
+        
+        logger.info(f"🔊 TTS request: '{text[:100]}...'")
+        
+        # Get TTS service (lazy-loaded)
+        tts = get_tts()
+        
+        # Generate speech to temp file
+        with safe_temp_file(suffix=".wav") as temp_path:
+            output_path = tts.synthesize(text, output_path=temp_path)
+            
+            # Return audio file
+            response = FileResponse(
+                output_path,
+                media_type="audio/wav",
+                filename="speech.wav",
+                headers={"Content-Disposition": "attachment; filename=speech.wav"}
+            )
+            
+            logger.info(f"✅ TTS success: {output_path}")
+            return response
+        
+    except DependencyMissingError as e:
+        logger.warning(f"Speech deps missing: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "speech_dependencies_missing",
+                "message": str(e),
+                "install_command": "pip install TTS soundfile",
+                "docs": "See VOICE_FEATURES.md for full setup instructions"
+            }
+        )
+    except HTTPException:
+        raise  # Re-raise validation errors
+    except Exception as e:
+        logger.error(f"TTS failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Text-to-speech failed: {str(e)}"
+        )
+
+
+@app.post("/voice-query")
+async def voice_query(audio: UploadFile = File(...)):
+    """
+    🎤 Voice RAG Pipeline: Speak a question → Get a spoken answer
+    
+    Combines STT → RAG → TTS pipeline for full voice interaction.
+    
+    **Requires optional dependencies:** `pip install faster-whisper TTS soundfile pydub`
+    
+    Args:
+        audio: Audio file with spoken question
+               Max size: 25MB, Max duration: 5 minutes
+        
+    Returns:
+        Audio file with spoken answer (WAV format)
+        Headers include transcribed question and answer text
+        
+    Raises:
+        503: Speech dependencies not installed
+        400: Invalid audio file
+        500: Pipeline error
+    """
+    try:
+        from app.speech import (
+            get_stt, get_tts,
+            DependencyMissingError,
+            AudioValidationError,
+            SpeechServiceError,
+            safe_temp_file
+        )
+        
+        logger.info(f"🎤 Voice query: {audio.filename}")
+        
+        # Step 1: Speech-to-Text
+        with safe_temp_file(suffix=os.path.splitext(audio.filename or ".wav")[1]) as input_path:
+            # Save uploaded audio
+            content = await audio.read()
+            with open(input_path, "wb") as f:
+                f.write(content)
+            
+            # Convert webm to wav if needed
+            if input_path.endswith('.webm') or input_path.endswith('.ogg'):
+                try:
+                    logger.info("Converting webm/ogg to wav using ffmpeg...")
+                    
+                    # Use ffmpeg directly (more reliable than pydub for Python 3.13)
+                    import subprocess
+                    
+                    # Create a new temp file for wav
+                    with safe_temp_file(suffix=".wav") as wav_path:
+                        # Use ffmpeg to convert: mono, 16kHz, 16-bit PCM
+                        cmd = [
+                            'ffmpeg',
+                            '-i', input_path,
+                            '-ar', '16000',  # Sample rate: 16kHz
+                            '-ac', '1',      # Channels: mono
+                            '-sample_fmt', 's16',  # 16-bit PCM
+                            '-y',            # Overwrite output
+                            wav_path
+                        ]
+                        
+                        result = subprocess.run(
+                            cmd,
+                            capture_output=True,
+                            text=True,
+                            timeout=30
+                        )
+                        
+                        if result.returncode != 0:
+                            logger.error(f"ffmpeg error: {result.stderr}")
+                            raise Exception(f"ffmpeg conversion failed: {result.stderr[:200]}")
+                        
+                        logger.info("✅ Audio converted successfully")
+                        
+                        # Transcribe the converted audio
+                        stt = get_stt()
+                        stt_result = stt.transcribe(wav_path)
+                        question = stt_result["text"]
+                        
+                except subprocess.TimeoutExpired:
+                    logger.error("Audio conversion timeout")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Audio conversion timed out. File may be too large."
+                    )
+                except FileNotFoundError:
+                    logger.error("ffmpeg not found")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="ffmpeg is not installed. Please install it: brew install ffmpeg"
+                    )
+                except Exception as e:
+                    logger.error(f"Audio conversion failed: {e}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Failed to convert audio: {str(e)}"
+                    )
+            else:
+                # Transcribe directly
+                stt = get_stt()
+                stt_result = stt.transcribe(input_path)
+                question = stt_result["text"]
+            
+            logger.info(f"📝 Transcribed: '{question}'")
+        
+        # Clean up voice transcription (handle misheard words)
+        # Common misheards: "Camp Co" → "Kamco", "Camp co-invest" → "Kamco Co-Invest"
+        question_cleaned = question
+        replacements = {
+            "camp co": "kamco",
+            "campco": "kamco",
+            "camp go": "kamco",
+            "camco": "kamco",
+            "cam co": "kamco",
+        }
+        question_lower = question.lower()
+        for wrong, right in replacements.items():
+            if wrong in question_lower:
+                question_cleaned = question_lower.replace(wrong, right)
+                logger.info(f"� Corrected transcription: '{question}' → '{question_cleaned}'")
+                break
+        
+        # Step 2: RAG Query
+        rag = get_rag_system()
+        rag_result = rag.query(question=question_cleaned, top_k=15)
+        answer = rag_result["answer"]
+        
+        logger.info(f"🤖 Generated answer: '{answer[:100]}...'")
+        
+        # Step 3: Return text response (voice disabled for now)
+        return {
+            "question": question_cleaned,
+            "original_transcription": question,
+            "answer": answer,
+            "sources": rag_result.get("sources", []),
+            "mode": "text"
+        }
+        
+    except DependencyMissingError as e:
+        logger.warning(f"Speech deps missing: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "speech_dependencies_missing",
+                "message": str(e),
+                "install_command": "pip install faster-whisper TTS soundfile pydub",
+                "docs": "See VOICE_FEATURES.md for full setup instructions"
+            }
+        )
+    except AudioValidationError as e:
+        logger.warning(f"Audio validation failed: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "invalid_audio",
+                "message": str(e)
+            }
+        )
+    except Exception as e:
+        logger.error(f"Voice query failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Voice query failed: {str(e)}"
+        )
 
 
 if __name__ == "__main__":

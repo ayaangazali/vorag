@@ -1,17 +1,7 @@
-# FastAPI# LangChain and RAG
-langchain==0.1.5
-langchain-community==0.0.16
-langchain-openai==0.0.5
-langchain-anthropic==0.1.1
-
-# Vector store
-chromadb==0.4.22
-
-# AI APIs
-openai==1.10.0  # For embeddings
-anthropic==0.18.0  # For Claude LLMr
+# FastAPI and Web Server
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
+python-multipart>=0.0.21
 pydantic>=2.5.0
 pydantic-settings>=2.1.0
 
@@ -24,16 +14,47 @@ requests>=2.31.0
 lxml>=5.0.0
 
 # LangChain and RAG
-langchain>=0.1.0
-langchain-community>=0.0.17
-langchain-openai>=0.0.5
+langchain==0.1.5
+langchain-community==0.0.20
+langchain-openai==0.0.6
+langchain-anthropic==0.1.1
+langchain-huggingface>=0.0.1
 
 # Vector store
 chromadb>=0.4.22
 
-# OpenAI (for embeddings and LLM)
-openai>=1.10.0
+# AI APIs
+openai==1.10.0  # For embeddings
+anthropic==0.18.0  # For Claude LLM
 
 # Utilities
 python-dotenv>=1.0.0
 httpx>=0.26.0
+
+# ============================================================================
+# Speech/Voice Dependencies (OPTIONAL - app works without these)
+# Install with: pip install faster-whisper TTS pydub soundfile
+# System requirement: ffmpeg must be installed (brew install ffmpeg on macOS)
+#
+# NOTE: TTS (Coqui) only supports Python <=3.11
+# For Python 3.12+, use pyttsx3 as alternative (basic offline TTS)
+# ============================================================================
+
+# Speech-to-Text (STT) - Whisper models
+faster-whisper>=1.0.0  # Fast, accurate transcription (CPU-friendly)
+
+# Text-to-Speech (TTS) - Choose ONE based on Python version:
+# TTS>=0.21.0  # Coqui TTS (Python <=3.11 only - RECOMMENDED for quality)
+pyttsx3>=2.90  # Simple offline TTS (Python 3.12+ compatible)
+
+# Audio processing utilities
+pydub>=0.25.1  # Audio format conversion (requires ffmpeg)
+soundfile>=0.12.1  # WAV file I/O
+numpy>=1.24.0,<2.0  # Audio array manipulation (pin major version)
+
+# File validation
+python-magic>=0.4.27  # MIME type detection for uploaded files
+
+# Testing (optional)
+pytest>=7.0.0
+pytest-asyncio>=0.21.0

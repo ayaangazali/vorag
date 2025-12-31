@@ -195,6 +195,7 @@ Question: {question}
 
 Instructions:
 - Answer the question using only information from the context above
+- Be LENIENT with name variations (e.g., "Camp Co" means "Kamco", "camp co-invest" means "Kamco Co-Invest")
 - If the question asks to compare multiple funds, analyze ALL relevant funds found in the context
 - When comparing, create clear comparisons using tables, bullet points, or structured formats
 - For comparisons, highlight key differences and similarities (e.g., performance, NAV, fees, risk levels, geographic focus)

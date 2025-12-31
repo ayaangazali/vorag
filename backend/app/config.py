@@ -1,19 +1,5 @@
 """
-Configuration managem    # LangChain Settings
-    EMBEDDING_PROVIDER: str = "anthropic"  # openai, azure, anthropic
-    LLM_PROVIDER: str = "anthropic"  # openai, azure, anthropic
-    
-    # OpenAI Settings (for embeddings if using openai provider)
-    OPENAI_API_KEY: Optional[str] = None
-    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
-    OPENAI_LLM_MODEL: str = "gpt-3.5-turbo"
-    OPENAI_TEMPERATURE: float = 0.7
-    
-    # Anthropic Settings (for Claude LLM and embeddings)
-    ANTHROPIC_API_KEY: Optional[str] = None
-    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
-    ANTHROPIC_TEMPERATURE: float = 0.7
-    ANTHROPIC_MAX_TOKENS: int = 4096oiceRAG backend.
+Configuration management for VoiceRAG backend.
 Loads settings from environment variables.
 """
 
@@ -56,7 +42,7 @@ class Settings(BaseSettings):
     
     # Anthropic Settings (for Claude)
     ANTHROPIC_API_KEY: Optional[str] = None
-    ANTHROPIC_MODEL: str = "claude-3-opus-20240229"
+    ANTHROPIC_MODEL: str = "claude-3-haiku-20240307"
     ANTHROPIC_TEMPERATURE: float = 0.7
     ANTHROPIC_MAX_TOKENS: int = 4096
     
@@ -79,6 +65,29 @@ class Settings(BaseSettings):
     # RAG Settings
     TOP_K: int = 15  # Increased for better fund comparisons
     MAX_CONTEXT_LENGTH: int = 8000  # Increased to hold more fund data for comparisons
+    
+    # ==========================================
+    # Speech Settings (Optional Dependencies)
+    # ==========================================
+    
+    # Whisper STT Model Size
+    # Options: tiny, base, small, medium, large-v3
+    # Larger = more accurate but slower
+    WHISPER_MODEL_SIZE: str = "base"
+    
+    # Coqui TTS Model
+    # Fast English: "tts_models/en/ljspeech/tacotron2-DDC"
+    # Multilingual (17 langs): "tts_models/multilingual/multi-dataset/xtts_v2"
+    TTS_MODEL: str = "tts_models/en/ljspeech/tacotron2-DDC"
+    
+    # Speech File Size Limits (bytes)
+    MAX_AUDIO_FILE_SIZE: int = 25 * 1024 * 1024  # 25MB
+    
+    # Speech Duration Limits (seconds)
+    MAX_AUDIO_DURATION: int = 300  # 5 minutes
+    
+    # TTS Text Length Limit (characters)
+    MAX_TTS_TEXT_LENGTH: int = 5000
     
     # Logging
     LOG_LEVEL: str = "INFO"
