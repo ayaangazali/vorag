@@ -33,22 +33,17 @@ httpx>=0.26.0
 
 # ============================================================================
 # Speech/Voice Dependencies (OPTIONAL - app works without these)
-# Install with: pip install faster-whisper TTS pydub soundfile
+# Install with: pip install faster-whisper edge-tts
 # System requirement: ffmpeg must be installed (brew install ffmpeg on macOS)
-#
-# NOTE: TTS (Coqui) only supports Python <=3.11
-# For Python 3.12+, use pyttsx3 as alternative (basic offline TTS)
 # ============================================================================
 
 # Speech-to-Text (STT) - Whisper models
 faster-whisper>=1.0.0  # Fast, accurate transcription (CPU-friendly)
 
-# Text-to-Speech (TTS) - Choose ONE based on Python version:
-# TTS>=0.21.0  # Coqui TTS (Python <=3.11 only - RECOMMENDED for quality)
-pyttsx3>=2.90  # Simple offline TTS (Python 3.12+ compatible)
+# Text-to-Speech (TTS) - Microsoft Edge Neural Voices
+edge-tts>=6.1.0  # FREE Microsoft neural voices (sounds amazing!)
 
 # Audio processing utilities
-pydub>=0.25.1  # Audio format conversion (requires ffmpeg)
 soundfile>=0.12.1  # WAV file I/O
 numpy>=1.24.0,<2.0  # Audio array manipulation (pin major version)
 

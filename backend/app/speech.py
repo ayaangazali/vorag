@@ -311,26 +311,23 @@ class SpeechToText:
 
 class TextToSpeech:
     """
-    Thread-safe Text-to-Speech service using Coqui TTS.
+    Thread-safe Text-to-Speech service using Edge TTS (Microsoft's neural voices).
     
-    Lazy-loads model on first use. Safe to instantiate even if dependencies missing.
+    Completely free, sounds natural, and works on all Python versions.
     """
     
     def __init__(
         self,
-        model_name: Optional[str] = None,
-        device: str = "cpu"
+        voice: Optional[str] = None,
     ):
         """
         Initialize TTS service.
         
         Args:
-            model_name: TTS model name from Coqui TTS model zoo. Defaults to config setting.
-            device: Device to use ("cpu" or "cuda")
+            voice: Voice name (e.g., "en-US-AriaNeural", "en-US-GuyNeural")
+                   Defaults to "en-US-AriaNeural" (female, natural)
         """
-        self.model_name = model_name or settings.TTS_MODEL
-        self.device = device
-        self.tts = None
+        self.voice = voice or "en-US-AriaNeural"  # Default: natural female voice
         self._initialized = False
     
     def _ensure_initialized(self):
@@ -338,44 +335,18 @@ class TextToSpeech:
         if self._initialized:
             return
         
-        # Try Coqui TTS first (better quality but Python <=3.11 only)
         try:
-            from TTS.api import TTS
-            logger.info(f"Loading Coqui TTS model: {self.model_name} (device={self.device})")
-            self.tts = TTS(model_name=self.model_name)
-            self.tts.to(self.device)
-            self.tts_engine = 'coqui'
+            import edge_tts
+            self.edge_tts = edge_tts
             self._initialized = True
-            logger.info(f"✅ Coqui TTS model loaded successfully")
-            return
-        except ImportError:
-            logger.warning("Coqui TTS not available (requires Python <=3.11). Falling back to pyttsx3...")
-        except Exception as e:
-            logger.warning(f"Failed to load Coqui TTS: {e}. Falling back to pyttsx3...")
-        
-        # Fallback to pyttsx3 (Python 3.12+ compatible, offline)
-        try:
-            import pyttsx3
-            logger.info("Loading pyttsx3 TTS engine...")
-            self.tts = pyttsx3.init()
-            # Set properties for better quality
-            self.tts.setProperty('rate', 175)  # Speed of speech
-            self.tts.setProperty('volume', 0.9)  # Volume 0-1
-            self.tts_engine = 'pyttsx3'
-            self._initialized = True
-            logger.info("✅ pyttsx3 TTS engine loaded successfully")
+            logger.info(f"✅ Edge TTS initialized with voice: {self.voice}")
         except ImportError as e:
             raise DependencyMissingError(
-                "No TTS library available. Install one of:\n"
-                "  pip install TTS (Python <=3.11)\n"
-                "  pip install pyttsx3 (Python 3.12+)"
-            ) from e
-        except Exception as e:
-            raise SpeechServiceError(
-                f"Failed to initialize TTS engine: {str(e)}"
+                "Edge TTS not installed. Install with:\n"
+                "  pip install edge-tts"
             ) from e
     
-    def synthesize(
+    async def synthesize(
         self,
         text: str,
         output_path: Optional[str] = None,
@@ -384,20 +355,20 @@ class TextToSpeech:
         language: Optional[str] = None
     ) -> str:
         """
-        Convert text to speech.
+        Convert text to speech using Edge TTS.
         
         Args:
             text: Text to synthesize
             output_path: Optional output file path. If None, creates temp file.
             max_chars: Maximum text length (defaults to config)
-            speaker: Optional speaker name (for multi-speaker models)
-            language: Optional language code (for multilingual models)
+            speaker: Ignored (for compatibility)
+            language: Ignored (voice determines language)
             
         Returns:
-            Path to generated audio file (WAV format)
+            Path to generated audio file (MP3 format)
             
         Raises:
-            DependencyMissingError: If TTS not installed
+            DependencyMissingError: If Edge TTS not installed
             AudioValidationError: If text too long or empty
             SpeechServiceError: If synthesis fails
         """
@@ -420,34 +391,18 @@ class TextToSpeech:
         
         # Create output path if not provided
         if output_path is None:
-            output_path = tempfile.mktemp(suffix=".wav", dir=None)
+            output_path = tempfile.mktemp(suffix=".mp3", dir=None)
         
         try:
             logger.info(f"Synthesizing {len(text)} chars: '{text[:100]}...'")
             
-            if self.tts_engine == 'coqui':
-                # Use Coqui TTS
-                kwargs = {}
-                if speaker:
-                    kwargs["speaker"] = speaker
-                if language:
-                    kwargs["language"] = language
-                
-                # Generate speech
-                self.tts.tts_to_file(
-                    text=text,
-                    file_path=output_path,
-                    **kwargs
-                )
-            else:
-                # Use pyttsx3
-                self.tts.save_to_file(text, output_path)
-                self.tts.runAndWait()
-
+            # Use edge-tts (native async)
+            communicate = self.edge_tts.Communicate(text, self.voice)
+            await communicate.save(output_path)
             
             # Verify file was created
             if not os.path.exists(output_path):
-                raise SpeechServiceError("TTS did not create output file")
+                raise SpeechServiceError("Edge TTS did not create output file")
             
             file_size_kb = os.path.getsize(output_path) / 1024
             logger.info(f"✅ Generated audio: {output_path} ({file_size_kb:.1f} KB)")
@@ -494,14 +449,14 @@ def get_stt(
     return _stt_instance
 
 
-def get_tts(
-    model_name: Optional[str] = None,
-    device: str = "cpu"
-) -> TextToSpeech:
+def get_tts(voice: Optional[str] = None) -> TextToSpeech:
     """
     Get or create thread-safe TTS singleton.
     
     Safe to call even if dependencies not installed (lazy initialization).
+    
+    Args:
+        voice: Voice name (e.g., "en-US-AriaNeural", "en-US-GuyNeural")
     """
     global _tts_instance
     
@@ -509,10 +464,7 @@ def get_tts(
         with _tts_lock:
             # Double-check inside lock
             if _tts_instance is None:
-                _tts_instance = TextToSpeech(
-                    model_name=model_name,
-                    device=device
-                )
+                _tts_instance = TextToSpeech(voice=voice)
     
     return _tts_instance
 
@@ -522,7 +474,7 @@ def check_speech_dependencies() -> Dict[str, bool]:
     Check which speech dependencies are installed.
     
     Returns:
-        Dict with {faster_whisper: bool, TTS: bool, soundfile: bool, pydub: bool}
+        Dict with {faster_whisper: bool, edge_tts: bool, soundfile: bool}
     """
     deps = {}
     
@@ -533,22 +485,16 @@ def check_speech_dependencies() -> Dict[str, bool]:
         deps["faster_whisper"] = False
     
     try:
-        import TTS
-        deps["TTS"] = True
+        import edge_tts
+        deps["edge_tts"] = True
     except ImportError:
-        deps["TTS"] = False
+        deps["edge_tts"] = False
     
     try:
         import soundfile
         deps["soundfile"] = True
     except ImportError:
         deps["soundfile"] = False
-    
-    try:
-        import pydub
-        deps["pydub"] = True
-    except ImportError:
-        deps["pydub"] = False
     
     return deps
 

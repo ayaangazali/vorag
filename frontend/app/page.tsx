@@ -141,6 +141,22 @@ export default function Home() {
       const contentType = response.headers.get('content-type')
       
       if (contentType?.includes('audio')) {
+        // Get metadata from headers
+        const transcribedQuestion = response.headers.get('X-Transcribed-Question') || ''
+        const answerText = response.headers.get('X-Answer-Text') || ''
+        const voiceUsed = response.headers.get('X-Voice') || 'Edge TTS'
+        
+        // Update user message with transcribed question (show what you said)
+        if (transcribedQuestion) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === userMessageId
+                ? { ...msg, content: transcribedQuestion }  // Show exactly what you said
+                : msg
+            )
+          )
+        }
+        
         // Get audio blob
         const audioBlob = await response.blob()
         
@@ -151,21 +167,35 @@ export default function Home() {
         // Store audio element for cleanup
         setAudioElement(audio)
         
-        // Play the audio
-        await audio.play()
-        
-        // Update message to show audio was played
+        // Update assistant message to show we're playing audio
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === typingId
-              ? { ...msg, content: '🔊 Playing voice response...' }
+              ? { ...msg, content: answerText || '🔊 Playing voice response...' }
               : msg
           )
         )
-
-        // When audio finishes, try to get the transcription
+        
+        // Play the audio
+        await audio.play()
+        
+        // When audio finishes, clean up
         audio.onended = () => {
           URL.revokeObjectURL(audioUrl)
+          console.log('✅ Audio playback completed')
+        }
+        
+        // Handle audio errors
+        audio.onerror = (e) => {
+          console.error('Audio playback error:', e)
+          URL.revokeObjectURL(audioUrl)
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === typingId
+                ? { ...msg, content: answerText || 'Audio playback failed. ' + (answerText ? `Answer: ${answerText}` : '') }
+                : msg
+            )
+          )
         }
         
       } else {

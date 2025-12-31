@@ -511,22 +511,24 @@ async def voice_query(audio: UploadFile = File(...)):
             
             logger.info(f"📝 Transcribed: '{question}'")
         
-        # Clean up voice transcription (handle misheard words)
-        # Common misheards: "Camp Co" → "Kamco", "Camp co-invest" → "Kamco Co-Invest"
-        question_cleaned = question
-        replacements = {
-            "camp co": "kamco",
-            "campco": "kamco",
-            "camp go": "kamco",
-            "camco": "kamco",
-            "cam co": "kamco",
-        }
-        question_lower = question.lower()
-        for wrong, right in replacements.items():
-            if wrong in question_lower:
-                question_cleaned = question_lower.replace(wrong, right)
-                logger.info(f"� Corrected transcription: '{question}' → '{question_cleaned}'")
-                break
+        # Step 1.5: Use Claude to clean up grammar and fix transcription errors
+        from anthropic import Anthropic
+        anthropic_client = Anthropic(api_key=settings.anthropic_api_key)
+        
+        correction_prompt = f"""Fix any grammar mistakes and correct common transcription errors in this voice query. 
+Common errors: "camp co" should be "Kamco", "camco" should be "Kamco", "camp go" should be "Kamco", "camcuin" should be "Kamco".
+Keep it natural and conversational. Only return the corrected text, nothing else.
+
+Original: {question}"""
+
+        correction_response = anthropic_client.messages.create(
+            model="claude-3-haiku-20240307",  # Fast model for quick correction
+            max_tokens=200,
+            messages=[{"role": "user", "content": correction_prompt}]
+        )
+        
+        question_cleaned = correction_response.content[0].text.strip()
+        logger.info(f"✨ Claude corrected: '{question}' → '{question_cleaned}'")
         
         # Step 2: RAG Query
         rag = get_rag_system()
