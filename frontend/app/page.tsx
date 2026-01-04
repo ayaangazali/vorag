@@ -150,37 +150,29 @@ export default function Home() {
         console.log('💬 Answer text:', answerText)
         console.log('🎤 Voice:', voiceUsed)
         
-        // Update user message with transcribed question (show what you said)
-        if (transcribedQuestion) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === userMessageId
-                ? { ...msg, content: transcribedQuestion }  // Show exactly what you said
-                : msg
-            )
-          )
-        }
-        
         // Get audio blob
         const audioBlob = await response.blob()
         
-        // Create audio URL and play it
+        // Create audio URL and preload
         const audioUrl = URL.createObjectURL(audioBlob)
         const audio = new Audio(audioUrl)
+        audio.preload = 'auto'  // Preload audio for faster playback
         
         // Store audio element for cleanup
         setAudioElement(audio)
         
-        // Update assistant message to show answer text BEFORE playing audio
-        if (answerText) {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === typingId
-                ? { ...msg, content: answerText }  // Show the actual answer
-                : msg
-            )
-          )
-        }
+        // BATCH UPDATE: Update both user and assistant messages at once (single re-render)
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.id === userMessageId && transcribedQuestion) {
+              return { ...msg, content: transcribedQuestion }
+            }
+            if (msg.id === typingId && answerText) {
+              return { ...msg, content: answerText }
+            }
+            return msg
+          })
+        )
         
         // Play the audio
         await audio.play()

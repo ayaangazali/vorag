@@ -523,16 +523,16 @@ Original: {question}"""
 
         correction_response = anthropic_client.messages.create(
             model="claude-3-haiku-20240307",  # Fast model for quick correction
-            max_tokens=200,
+            max_tokens=100,  # Reduced for faster response
             messages=[{"role": "user", "content": correction_prompt}]
         )
         
         question_cleaned = correction_response.content[0].text.strip()
         logger.info(f"✨ Claude corrected: '{question}' → '{question_cleaned}'")
         
-        # Step 2: RAG Query
+        # Step 2: RAG Query (reduced top_k for faster performance)
         rag = get_rag_system()
-        rag_result = rag.query(question=question_cleaned, top_k=15)
+        rag_result = rag.query(question=question_cleaned, top_k=5)
         answer = rag_result["answer"]
         
         logger.info(f"🤖 Generated answer: '{answer[:100]}...'")
